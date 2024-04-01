@@ -35,7 +35,7 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitExpressionStmt(Stmt.Expression stmt) {
-        resolve(stmt);
+        resolve(stmt.expression);
         return null;
     }
 
@@ -66,7 +66,7 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         if (currentFunction == FunctionType.NONE) {
             Lox.error(stmt.keyword, "Can't return from a top-level code.");
         }
-        
+
         if (stmt.value != null) {
             resolve(stmt.value);
         }
