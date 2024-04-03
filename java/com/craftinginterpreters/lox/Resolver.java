@@ -20,6 +20,13 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         FUNCTION
     }
 
+    private enum ClassType {
+        NONE,
+        CLASS
+    }
+
+    private ClassType currentClass = ClassType.NONE;
+
     void resolve(List<Stmt> statements) {
         for (Stmt statement: statements) {
             resolve(statement);
@@ -36,6 +43,9 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitClassStmt(Stmt.Class stmt) {
+        ClassType enclosingClass = currentClass;
+        currentClass = ClassType.NONE;
+
         declare(stmt.name);
         define(stmt.name);
 
@@ -48,7 +58,8 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
         }
 
         endScope();
-        
+
+        currentClass = enclosingClass;
         return null;
     }
 
@@ -167,6 +178,9 @@ public class Resolver implements Expr.Visitor<Void>, Stmt.Visitor<Void> {
 
     @Override
     public Void visitThisExpr(Expr.This expr) {
+        if (currentClass == ClassType.NONE) {
+            Lox.error(expr.keyword, "Can't use 'this' outside of a class.");
+        }
         resolveLocal(expr, expr.keyword);
         return null;
     }
