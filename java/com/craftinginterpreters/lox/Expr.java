@@ -12,8 +12,9 @@ abstract class Expr {
    R visitLiteralExpr(Literal expr);
    R visitLogicalExpr(Logical expr);
    R visitSetExpr(Set expr);
-   R visitVariableExpr(Variable expr);
+   R visitThisExpr(This expr);
    R visitUnaryExpr(Unary expr);
+   R visitVariableExpr(Variable expr);
   }
   static class Assign extends Expr {
    Assign(Token name, Expr value) {
@@ -131,17 +132,17 @@ abstract class Expr {
    final Token name;
    final Expr value;
   }
-  static class Variable extends Expr {
-   Variable(Token name) {
-    this.name = name;
+  static class This extends Expr {
+   This(Token keyword) {
+    this.keyword = keyword;
    }
 
    @Override
    <R> R accept(Visitor<R> visitor) {
-    return visitor.visitVariableExpr(this);
+    return visitor.visitThisExpr(this);
    }
 
-   final Token name;
+   final Token keyword;
   }
   static class Unary extends Expr {
    Unary(Token operator, Expr right) {
@@ -156,6 +157,18 @@ abstract class Expr {
 
    final Token operator;
    final Expr right;
+  }
+  static class Variable extends Expr {
+   Variable(Token name) {
+    this.name = name;
+   }
+
+   @Override
+   <R> R accept(Visitor<R> visitor) {
+    return visitor.visitVariableExpr(this);
+   }
+
+   final Token name;
   }
 
   abstract <R> R accept(Visitor<R> visitor);
