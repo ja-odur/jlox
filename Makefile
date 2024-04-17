@@ -63,10 +63,10 @@ clean:
 # debug:
 # 	@ $(MAKE) -f util/c.make NAME=cloxd MODE=debug SOURCE_DIR=c
 
-# # Compile the C interpreter.
-# clox:
-# 	@ $(MAKE) -f util/c.make NAME=clox MODE=release SOURCE_DIR=c
-# 	@ cp build/clox clox # For convenience, copy the interpreter to the top level.
+# Compile the C interpreter.
+clox:
+	@ $(MAKE) -f util/c.make NAME=clox MODE=release SOURCE_DIR=c
+	@ cp build/clox clox # For convenience, copy the interpreter to the top level.
 
 # # Compile the C interpreter as ANSI standard C++.
 # cpplox:
