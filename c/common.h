@@ -5,5 +5,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#endif
+#define DEBUG_TRACE_EXECUTION
 
+#endif
