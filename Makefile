@@ -15,6 +15,7 @@ default: jlox
 clean:
 	@ rm -rf $(BUILD_DIR)
 	@ rm -rf gen
+	@ rm -f clox
 
 # # Build the site.
 # book: $(BUILD_SNAPSHOT)
