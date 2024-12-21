@@ -18,6 +18,10 @@ void* reallocate(void* pointer, size_t oldSize, size_t newSize) {
 
 void freeObject(Obj* object) {
     switch (object->type) {
+        case OBJ_CLOSURE: {
+            FREE(ObjClosure, object);
+            break;
+        }
         case OBJ_FUNCTION: {
             ObjFunction* function = (ObjFunction*)object;
             freeChunk(&function->chunk);
