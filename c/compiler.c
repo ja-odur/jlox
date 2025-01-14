@@ -313,7 +313,7 @@ static void namedVariable(Token name, bool canAssign) {
     if (arg != -1) {
         getOp = OP_GET_LOCAL;
         setOp = OP_SET_LOCAL;
-    } else if (arg = resolveUpvalue(current, &name) != -1) {
+    } else if ((arg = resolveUpvalue(current, &name)) != -1) {
         getOp = OP_GET_UPVALUE;
         setOp = OP_SET_UPVALUE;
     } else {
@@ -442,7 +442,7 @@ static int addUpvalue(Compiler* compiler, uint8_t index, bool isLocal) {
     for (int i = 0; i < upvalueCount; i++) {
         Upvalue* upvalue = &compiler->upvalues[i];
 
-        if (upvalue->index == index && upvalue->isLocal ==isLocal) {
+        if (upvalue->index == index && upvalue->isLocal == isLocal) {
             return i;
         }
     }
@@ -461,7 +461,7 @@ static int addUpvalue(Compiler* compiler, uint8_t index, bool isLocal) {
 static int resolveUpvalue(Compiler* compiler, Token* name) {
     if (compiler->enclosing == NULL) return -1;
 
-    int local = resolveLocal(compiler, name);
+    int local = resolveLocal(compiler->enclosing, name);
     if (local != -1) {
         return addUpvalue(compiler, (uint8_t)local, true);
     }
