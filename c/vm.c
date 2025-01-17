@@ -58,6 +58,11 @@ static void defineNative(const char* name, NativeFn function) {
 void initVM() {
     resetStack();
     vm.objects = NULL;
+
+    vm.grayCount = 0;
+    vm.grayCapacity = 0;
+    vm.grayStack = NULL;
+
     initTable(&vm.globals);
     initTable(&vm.strings);
 
@@ -125,25 +130,25 @@ static bool callValue(Value callee, int argCount) {
 static ObjUpvalue* captureUpvalue(Value* local) {
     ObjUpvalue* prevUpvalue = NULL;
     ObjUpvalue* upvalue = vm.openUpvalues;
-    
+
     while (upvalue != NULL && upvalue->location > local) {
         prevUpvalue = upvalue;
         upvalue = upvalue->next;
     }
-    
+
     if (upvalue != NULL && upvalue->location == local) {
         return upvalue;
     }
-    
+
     ObjUpvalue* createdUpvalue = newUpvalue(local);
     createdUpvalue->next = upvalue;
-    
+
     if (prevUpvalue == NULL) {
         vm.openUpvalues = createdUpvalue;
     } else {
         prevUpvalue->next = createdUpvalue;
     }
-    
+
     return createdUpvalue;
 }
 
