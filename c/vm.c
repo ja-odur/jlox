@@ -69,7 +69,7 @@ void initVM() {
 
     initTable(&vm.globals);
     initTable(&vm.strings);
-    
+
     vm.initString = NULL; // Zero out field to avoid GC interruptions due to string copying below.
     vm.initString = copyString("init", 4);
 
@@ -127,14 +127,14 @@ static bool callValue(Value callee, int argCount) {
                 ObjClass* klass = AS_CLASS(callee);
                 vm.stackTop[-argCount - 1] = OBJ_VAL(newInstance(klass));
                 Value initializer;
-                
+
                 if (tableGet(&klass->methods, vm.initString, &initializer)) {
                     return call(AS_CLOSURE(initializer), argCount);
                 } else if (argCount != 0) {
                     runtimeError("Expected 0 arguments but got %d.", argCount);
                     return false;
                 }
-                
+
                 return true;
             }
             case OBJ_CLOSURE:
@@ -160,26 +160,26 @@ static bool invokeFromClass(ObjClass* klass, ObjString* name, int argCount) {
         runtimeError("Undefined property '%s'.", name->chars);
         return false;
     }
-    
+
     return call(AS_CLOSURE(method), argCount);
 }
 
 static bool invoke(ObjString* name, int argCount) {
     Value receiver = peek(argCount);
-    
+
     if (!AS_INSTANCE(receiver)) {
         runtimeError("Only instances have methods.");
         return false;
     }
-    
+
     ObjInstance* instance = AS_INSTANCE(receiver);
-    
+
     Value value;
     if (tableGet(&instance->fields, name, &value)) {
         vm.stackTop[-argCount - 1] = value;
         return callValue(value, argCount);
     }
-    
+
     return invokeFromClass(instance->klass, name, argCount);
 }
 
@@ -189,7 +189,7 @@ static bool bindMethod(ObjClass* klass, ObjString* name) {
         runtimeError("Undefined property '%s'.", name->chars);
         return false;
     }
-    
+
     ObjBoundMethod* bound = newBoundMethod(peek(0), AS_CLOSURE(method));
     pop();
     push(OBJ_VAL(bound));
@@ -348,17 +348,17 @@ static InterpretResult run() {
                     runtimeError("Only instances have properties.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                
+
                 ObjInstance* instance = AS_INSTANCE(peek(0));
                 ObjString* name = READ_STRING();
-                
+
                 Value value;
                 if (tableGet(&instance->fields, name, &value)) {
                     pop(); // Instance.
                     push(value);
                     break;
                 }
-                
+
                 if (!bindMethod(instance->klass, name)) {
                     return INTERPRET_RUNTIME_ERROR;
                 }
@@ -369,7 +369,7 @@ static InterpretResult run() {
                     runtimeError("Only instances have fields.");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                
+
                 ObjInstance* instance = AS_INSTANCE(peek(1));
                 tableSet(&instance->fields, READ_STRING(), peek(0));
                 Value value = pop();
@@ -380,7 +380,7 @@ static InterpretResult run() {
             case OP_GET_SUPER: {
                 ObjString* name = READ_STRING();
                 ObjClass* superclass = AS_CLASS(pop());
-                
+
                 if (!bindMethod(superclass, name)) {
                     return INTERPRET_RUNTIME_ERROR;
                 }
@@ -455,6 +455,17 @@ static InterpretResult run() {
                 frame = &vm.frames[vm.frameCount - 1];
                 break;
             }
+            case OP_SUPER_INVOKE: {
+                ObjString* method = READ_STRING();
+                int argCount = READ_BYTE();
+                ObjClass* superclass = AS_CLASS(pop());
+
+                if (!invokeFromClass(superclass, method, argCount)) {
+                    return INTERPRET_RUNTIME_ERROR;
+                }
+                frame = &vm.frames[vm.frameCount - 1];
+                break;
+            }
             case OP_CLOSURE: {
                 ObjFunction* function = AS_FUNCTION(READ_CONSTANT());
                 ObjClosure* closure = newClosure(function);
@@ -502,7 +513,7 @@ static InterpretResult run() {
                     runtimeError("Superclass must be a class");
                     return INTERPRET_RUNTIME_ERROR;
                 }
-                
+
                 ObjClass* subclass = AS_CLASS(peek(0));
                 tableAddAll(&AS_CLASS(superclass)->methods, &subclass->methods);
                 pop(); // subclass.
