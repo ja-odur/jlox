@@ -75,6 +75,7 @@ typedef struct Compiler {
 } Compiler;
 
 typedef struct ClassCompiler {
+    bool hasSuperClass;
     struct ClassCompiler* enclosing;
 } ClassCompiler;
 
@@ -173,7 +174,7 @@ static void emitReturn() {
     } else {
         emitByte(OP_NIL);
     }
-    
+
     emitByte(OP_RETURN);
 }
 
@@ -299,7 +300,7 @@ static void call(bool canAssign) {
 static void dot(bool canAssign) {
     consume(TOKEN_IDENTIFIER, "Expect property name after '.'.");
     uint8_t name = identifierConstant(&parser.previous);
-    
+
     if (canAssign && match(TOKEN_EQUAL)) {
         expression();
         emitBytes(OP_SET_PROPERTY, name);
@@ -372,6 +373,13 @@ static void namedVariable(Token name, bool canAssign) {
 
 static void variable(bool canAssign) {
     namedVariable(parser.previous, canAssign);
+}
+
+static Token syntheticToken(const char* text) {
+    Token token;
+    token.start = text;
+    token.length = (int)strlen(text);
+    return token;
 }
 
 static void this_(bool canAssign) {
@@ -650,7 +658,7 @@ static void function(FunctionType type) {
 static void method() {
     consume(TOKEN_IDENTIFIER, "Expect method name.");
     uint8_t constant = identifierConstant(&parser.previous);
-    
+
     FunctionType type = TYPE_METHOD;
     if (parser.previous.length == 4 && memcmp(parser.previous.start, "init", 4) == 0) {
         type = TYPE_INITIALIZER;
@@ -664,35 +672,45 @@ static void classDeclaration() {
     Token className = parser.previous;
     uint8_t nameConstant = identifierConstant(&parser.previous);
     declareVariable();
-    
+
     emitBytes(OP_CLASS, nameConstant);
     defineVariable(nameConstant);
-    
+
     ClassCompiler classCompiler;
+    classCompiler.hasSuperClass = false;
     classCompiler.enclosing = currentClass;
     currentClass = &classCompiler;
-    
+
     if (match(TOKEN_LESS)) {
         consume(TOKEN_IDENTIFIER, "Expect superclass name.");
         variable(false);
-        
+
         if (identifiersEqual(&className, &parser.previous)) {
             error("A class can't inherit from itself.");
         }
+
+        beginScope();
+        addLocal(syntheticToken("super"));
+        defineVariable(0);
         namedVariable(className, false);
         emitByte(OP_INHERIT);
+        classCompiler.hasSuperClass = true;
     }
-    
+
     namedVariable(className, false);
     consume(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
-    
+
     while(!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
         method();
     }
-    
+
     consume(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
     emitByte(OP_POP);
-    
+
+    if (classCompiler.hasSuperClass) {
+        endScope();
+    }
+
     currentClass = currentClass->enclosing;
 }
 
@@ -802,7 +820,7 @@ static void returnStatement() {
         if (current->type == TYPE_INITIALIZER) {
             error("Can't return a value from an initializer.");
         }
-        
+
         expression();
         consume(TOKEN_SEMICOLON, "Expect ';' after return value.");
         emitByte(OP_RETURN);
