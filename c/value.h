@@ -2,9 +2,37 @@
 #define clox_value_h
 
 #include "common.h"
+#include <stdint.h>
+#include <string.h>
 
 typedef struct Obj Obj;
 typedef struct ObjString ObjString;
+
+#ifdef NAN_BOXING
+
+#define QNAN ((uint64_t)0x7ffc000000000000)
+
+typedef uint64_t Value;
+
+#define IS_NUMBER(value) (((value) & QNAN) != QNAN)
+
+#define AS_NUMBER(value) valueToNum(value)
+
+#define NUMBER_VAL(num) numToValue(num)
+
+static inline double valueToNum(Value value) {
+    double num;
+    memcpy(&num, &value, sizeof(Value));
+    return num;
+}
+
+static inline Value numToValue(double num) {
+    Value value;
+    memcpy(&value, &num, sizeof(double));
+    return value;
+}
+
+#else
 
 typedef enum {
     VAL_BOOL,
@@ -35,6 +63,8 @@ typedef struct {
 #define NIL_VAL ((Value){VAL_NIL, {.number = 0}})
 #define NUMBER_VAL(value) ((Value){VAL_NUMBER, {.number = value}})
 #define OBJ_VAL(object) ((Value){VAL_OBJ, {.obj = (Obj*)object}})
+
+#endif
 
 typedef struct {
     int capacity;
